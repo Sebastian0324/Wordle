@@ -25,6 +25,20 @@ struct Yellow
     char character;
     char poss = 0b11111;
 };
+void addYellow(char c, int index, std::vector<Yellow>& yellow)
+{
+    char temp = (31 - (1 << index));
+    for (auto &&i : yellow)
+    {
+        if (i.character == c)
+        {
+            i.poss &= temp;
+            return;
+        }
+    }
+    
+    yellow.push_back({c, temp});
+}
     
 static std::string checks(std::string& wrong, std::vector<Yellow>& yellow, char* green, std::string word)
 {
@@ -81,6 +95,7 @@ void FilterWords(std::string& wrong, std::vector<Yellow>& yellow, char* green, s
 void evaluateGuess(std::string& wrong, std::vector<Yellow>& yellow, char* green, Row& guess, std::string& hidden)
 {
     std::string g = guess.print();
+    std::string temp = hidden;
 
     for_each(g.begin(), g.end(), [](char& c) {
         c = tolower(c);
@@ -90,21 +105,35 @@ void evaluateGuess(std::string& wrong, std::vector<Yellow>& yellow, char* green,
     {
         if (wrong.find( g[i] ) != std::string::npos)
         {
-            guess.box[i].setEvaluation(1);
+            guess.box[i]->setEvaluation(1);
             continue;
         }
 
         if (hidden.find( g[i] ) == std::string::npos)
         {
-            guess.box[i].setEvaluation(1);
+            guess.box[i]->setEvaluation(1);
             wrong += g[i];
             continue;
         } 
         else if (g[i] == hidden[i])
         {
             green[i] = hidden[i];
-            guess.box[i].setEvaluation(3);
+            temp[i] = '*';
+            guess.box[i]->setEvaluation(3);
+            continue;
         }
+        addYellow(g[i], i, yellow);
+    }
+    for (int i = 0; i < 5; i++)
+    {
+        if (guess.box[i]->getEvaluation() != 0)
+            continue;
+        if (temp.find( g[i] ) != std::string::npos)
+        {
+            guess.box[i]->setEvaluation(2);
+            temp[temp.find(g[i])] = '*';
+        } else
+            guess.box[i]->setEvaluation(1);
     }
     
 }
@@ -146,13 +175,16 @@ int main()
             if (event.type ==  sf::Event::KeyPressed && sf::Keyboard::isKeyPressed(sf::Keyboard::Enter) && guess.size() == 5)
             {
                 std::cout << hidden << " | " << guess.print() << "\n";
+
                 evaluateGuess(wrong, yellow, green, guess, hidden);
+                guess.newRow();
+
                 if (posibleWords.size() == 0)
                     FilterWords(wrong, yellow, green, posibleWords, FILE_OF_WORDS);
                 else
                     FilterWords(wrong, yellow, green, posibleWords);
 
-                for (int i = 0; i < 10 && i < posibleWords.size(); i++)
+                for (int i = 0; i < 5 && i < posibleWords.size(); i++)
                 {
                     std::cout << posibleWords[i] << "\n";
                 }

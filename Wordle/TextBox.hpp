@@ -16,7 +16,7 @@ public:
     sf::Text character;
     sf::RectangleShape box;
 
-    Box(sf::Font* font = nullptr, int fs = 50);
+    Box(const sf::Font* font = nullptr, int fs = 50);
     ~Box();
     
     void setEvaluation(int eval);
@@ -32,7 +32,8 @@ private:
     int chars = 0;
 
 public:
-    Box box[5];
+    Box* box[5];
+    std::vector<Box*> oldRow;
 
     Row(sf::Font* font = nullptr);
     ~Row();
@@ -41,8 +42,19 @@ public:
     void push_back(char in);
     std::string print();
     int size();
+    void newRow();
 
     void draw(sf::RenderWindow& window) const;
+};
+
+
+class Keyboard
+{
+private:
+    /* data */
+public:
+    Keyboard(/* args */);
+    ~Keyboard();
 };
 
 #endif
