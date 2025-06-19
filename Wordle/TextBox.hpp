@@ -5,6 +5,11 @@
 #include <string>
 #include <SFML/Graphics.hpp>
 
+struct Yellow
+{
+    char character;
+    char poss = 0b11111;
+};
 
 class Box
 {
@@ -16,11 +21,12 @@ public:
     sf::Text character;
     sf::RectangleShape box;
 
-    Box(const sf::Font* font = nullptr, int fs = 50);
+    Box(const sf::Font* font = nullptr);
     ~Box();
     
     void setEvaluation(int eval);
     int getEvaluation() const;
+    void setWidth(float w);
 
     void draw(sf::RenderWindow &window) const;
 };
@@ -30,19 +36,26 @@ class Row
 {
 private:
     int chars = 0;
+    int length;
 
 public:
-    Box* box[5];
+    Box** box;
     std::vector<Box*> oldRow;
 
-    Row(sf::Font* font = nullptr);
+    Row(sf::Font* font = nullptr, int _length = 5);
     ~Row();
 
     void pop_back();
+    void push_back(std::string in);
     void push_back(char in);
     std::string print();
+
     int size();
     void newRow();
+    void setLength(int l);
+
+    void clear();
+    void setPositionScale(sf::Vector2f p, int s);
 
     void draw(sf::RenderWindow& window) const;
 };
@@ -51,10 +64,15 @@ public:
 class Keyboard
 {
 private:
-    /* data */
+    std::string layout[3] = {"QWERTYUIOP","ASDFGHJKL","ZXCVBNM"};
+    Row* rows[3];
 public:
-    Keyboard(/* args */);
+    Keyboard(sf::Font* font = nullptr);
     ~Keyboard();
+
+    void reset();
+    void updateEvaluation(std::string& w, std::vector<Yellow>& y, std::string g);
+    void draw(sf::RenderWindow& window) const;
 };
 
 #endif

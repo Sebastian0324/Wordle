@@ -20,11 +20,6 @@ static std::string getRandomLine() {
     return line;
 }
 
-struct Yellow
-{
-    char character;
-    char poss = 0b11111;
-};
 void addYellow(char c, int index, std::vector<Yellow>& yellow)
 {
     char temp = (31 - (1 << index));
@@ -90,7 +85,6 @@ void FilterWords(std::string& wrong, std::vector<Yellow>& yellow, char* green, s
         result.push_back( temp );
     }
 }
-
 
 void evaluateGuess(std::string& wrong, std::vector<Yellow>& yellow, char* green, Row& guess, std::string& hidden)
 {
@@ -158,8 +152,19 @@ int main()
     sf::Text text("[|87 Wordle", font, 50);
     text.setPosition(20, 20);
 
+    // add a restart button
+    Row restart(&font, 1);
+    restart.setPositionScale({480, 170}, 30);
+    restart.box[0]->setWidth(110.f);
+    restart.push_back("ReStart");
+
+    // Show a keyboard
+    Keyboard keyboard(&font);
+
+    // print a few possable words
+
     std::vector<std::string> posibleWords;
-    Row guess(&font);
+    Row guess(&font, 5);
     std::string wrong = "";
     std::vector<Yellow> yellow;
     char green[] = "     ";
@@ -172,11 +177,29 @@ int main()
         {
             if (event.type == sf::Event::Closed || sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
                 window.close();
-            if (event.type ==  sf::Event::KeyPressed && sf::Keyboard::isKeyPressed(sf::Keyboard::Enter) && guess.size() == 5)
+
+            if (event.type == sf::Event::MouseButtonPressed)
+            {
+                if (restart.box[0]->box.getGlobalBounds().contains({event.mouseButton.x/1.f, event.mouseButton.y/1.f}))
+                {
+                    wrong = "";
+                    strcpy(green, "     ");
+                    yellow.clear();
+
+                    guess.clear();
+                    keyboard.reset();
+                    posibleWords.clear();
+
+                    hidden = getRandomLine();
+                }
+            }
+
+            if (event.type == sf::Event::KeyPressed && sf::Keyboard::isKeyPressed(sf::Keyboard::Enter) && guess.size() == 5)
             {
                 std::cout << hidden << " | " << guess.print() << "\n";
 
                 evaluateGuess(wrong, yellow, green, guess, hidden);
+                keyboard.updateEvaluation(wrong, yellow, green);
                 guess.newRow();
 
                 if (posibleWords.size() == 0)
@@ -193,7 +216,7 @@ int main()
                 std::cout << wrong << "\n";
                 
             }
-            if (event.type ==  sf::Event::KeyPressed && sf::Keyboard::isKeyPressed(sf::Keyboard::BackSpace) && guess.size() > 0)
+            if (event.type == sf::Event::KeyPressed && sf::Keyboard::isKeyPressed(sf::Keyboard::BackSpace) && guess.size() > 0)
             {
                 // std::cout << " Remove letter.\n";
                 guess.pop_back();
@@ -206,8 +229,12 @@ int main()
         }
 
         window.clear(sf::Color(0x121213));
+
         window.draw( text );
         guess.draw( window );
+        keyboard.draw( window );
+        restart.draw( window );
+
         window.display();
     }
 
