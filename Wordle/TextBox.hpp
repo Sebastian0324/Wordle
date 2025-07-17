@@ -8,7 +8,7 @@
 struct Yellow
 {
     char character;
-    char poss = 0b11111;
+    char poss = 0b1111111;
 };
 
 class Box
@@ -64,13 +64,17 @@ public:
 class Keyboard
 {
 private:
+    sf::RectangleShape border;
     std::string layout[3] = {"QWERTYUIOP","ASDFGHJKL","ZXCVBNM"};
     Row* rows[3];
+    Box* enter;
 public:
     Keyboard(sf::Font* font = nullptr);
     ~Keyboard();
 
     void reset();
+    bool contains(sf::Event::MouseButtonEvent pos) const;
+    char click(sf::Event::MouseButtonEvent pos, std::string& w, std::vector<Yellow>& y);
     void updateEvaluation(std::string& w, std::vector<Yellow>& y, std::string g);
     void draw(sf::RenderWindow& window) const;
 };

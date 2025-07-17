@@ -39,7 +39,8 @@ int Box::getEvaluation() const
 
 void Box::setWidth(float w)
 {
-    box.setSize({w, box.getSize().y});
+    sf::Vector2f temp = {w, box.getSize().y};
+    box.setSize(temp);
 }
 
 void Box::draw(sf::RenderWindow &window) const
@@ -62,8 +63,9 @@ void CreateRow(const sf::Font* f, Box* box[], int numberOfBoxes)
 
 void MoveDown(Box* b)
 {
-    b->character.setPosition(b->character.getPosition().x,b->character.getPosition().y + 70);
-    b->box.setPosition(b->box.getPosition().x,b->box.getPosition().y + 70);
+    int offset = b->character.getCharacterSize() * 1.3;
+    b->character.setPosition(b->character.getPosition().x,b->character.getPosition().y + offset);
+    b->box.setPosition(b->box.getPosition().x,b->box.getPosition().y + offset);
 }
 
 //---------------------------------------------------
@@ -126,6 +128,8 @@ int Row::size()
 
 void Row::newRow()
 {
+    sf::Vector2f p = box[0]->box.getPosition();
+    int fs = box[0]->character.getCharacterSize();
     for (auto &&b : oldRow)
     {
         MoveDown(b);
@@ -137,23 +141,25 @@ void Row::newRow()
         oldRow.push_back(box[i]);
     }
     CreateRow(oldRow[0]->character.getFont(), box, length);
-    setPositionScale({32, 100}, 50);
+    setPositionScale(p, fs);
     chars = 0;
 }
 
 void Row::setLength(int l)
 {
     auto f = box[0]->character.getFont();
-
+    
     for (int i = 0; i < length; i++)
     {
         delete box[i];
     }
     delete[] box;
-
-    length = l;
     
+    length = l;
+    box = new Box*[l];
     CreateRow(f, box, length);
+    setPositionScale({32, 100}, 50);
+
 }
 
 void Row::clear()
@@ -219,7 +225,20 @@ Keyboard::Keyboard(sf::Font* font)
             c = tolower(c);
         });
     }
+
+    border.setFillColor(sf::Color(0,0,0,0));
+    border.setOutlineColor(sf::Color::Black);
+    border.setOutlineThickness(3);
+    border.setPosition(444, 14);
+    border.setSize({ 426, 145});
     
+    enter = new Box(font);
+    enter->character.setCharacterSize(35);
+    enter->box.setSize({35.f, 35.f});
+    enter->box.setPosition({818, 115});
+    CenterTextOnBox(enter->character, enter->box, "h");
+    temp = "¤";
+    enter->character.setString( sf::String::fromUtf8(temp.begin(), temp.end()) );
 }
 
 Keyboard::~Keyboard()
@@ -227,6 +246,7 @@ Keyboard::~Keyboard()
     delete rows[0];
     delete rows[1];
     delete rows[2];
+    delete enter;
 }
 
 void Keyboard::reset()
@@ -236,6 +256,59 @@ void Keyboard::reset()
             if (rows[i]->box[j]->getEvaluation() != 0)
                 rows[i]->box[j]->setEvaluation(0);
     
+}
+
+bool Keyboard::contains(sf::Event::MouseButtonEvent pos) const
+{
+    return border.getGlobalBounds().contains({pos.x/1.f, pos.y/1.f});
+}
+
+char Keyboard::click(sf::Event::MouseButtonEvent pos, std::string& w, std::vector<Yellow>& y)
+{
+    char temp = ' ';
+    sf::Vector2f xy = {pos.x/1.f, pos.y/1.f};
+    if (enter->box.getGlobalBounds().contains(xy))
+        return '#';
+    
+    for (int i = 0; i < 3; i++)
+    {
+        for (int j = 0; j < layout[i].length(); j++)
+        {
+            if (rows[i]->box[j]->box.getGlobalBounds().contains(xy))
+            {
+                temp = char(std::tolower(rows[i]->box[j]->character.getString()[0]));
+
+                if (rows[i]->box[j]->getEvaluation() == 0)
+                {
+                    w += temp;
+                } 
+                else if (rows[i]->box[j]->getEvaluation() == 1)
+                {
+                    w = w.substr(0, w.find(temp)) + w.substr(w.find(temp) + 1);
+                    y.push_back({temp, 127});
+                } 
+                else if (rows[i]->box[j]->getEvaluation() == 2)
+                {
+                    for (int k = 0; k < y.size(); k++)
+                    {
+                        if (y[k].character == temp)
+                        {
+                            y.erase(y.begin()+k);
+                        }
+                        
+                    }
+                    
+                }
+                
+                
+                
+                rows[i]->box[j]->setEvaluation( (rows[i]->box[j]->getEvaluation() + 1) % 3 );
+                return temp; // can only click on one thing at a time
+            }
+            
+        }
+    }
+    return ' ';
 }
 
 void Keyboard::updateEvaluation(std::string &w, std::vector<Yellow> &y, std::string g)
@@ -266,6 +339,8 @@ void Keyboard::updateEvaluation(std::string &w, std::vector<Yellow> &y, std::str
 
 void Keyboard::draw(sf::RenderWindow &window) const
 {
+    window.draw( border );
+    enter->draw( window );
     for (int i = 0; i < 3; i++)
     {
         rows[i]->draw( window );
